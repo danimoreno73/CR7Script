@@ -29,8 +29,8 @@ def error_de_ejecucion(tmp_path, fuente, entrada=b""):
 # E01 Fuera de juego
 
 def test_e01_comando_desconocido(tmp_path):
-    errores = error_de_analisis(tmp_path, f"{CALMA}.\nPase de Messi.\n{SIUUU}")
-    assert errores == "CR7Script: E01 Fuera de juego (jugada 2, línea 2): no conozco la jugada «Pase de Messi»\n"
+    errores = error_de_analisis(tmp_path, f"{CALMA}.\nPase de Benzema.\n{SIUUU}")
+    assert errores == "CR7Script: E01 Fuera de juego (jugada 2, línea 2): no conozco la jugada «Pase de Benzema»\n"
 
 
 @pytest.mark.parametrize("jugada", [
@@ -110,7 +110,7 @@ def test_e05_jugadas_tras_siuuu(tmp_path):
                        "el partido ya terminó con «¡Siuuu!»\n")
 
 
-@pytest.mark.parametrize("jugada", [CALMA, "Pase de Messi", "Ay mi madre, el Bicho:", SIUUU])
+@pytest.mark.parametrize("jugada", [CALMA, "Pase de Benzema", "Ay mi madre, el Bicho:", SIUUU])
 def test_e05_manda_sobre_lo_que_haya_despues(tmp_path, jugada):
     errores = error_de_analisis(tmp_path, f"{CALMA}.\n{SIUUU}.\n{jugada}.")
     assert errores.startswith("CR7Script: E05 Partido terminado (jugada 3, línea 3): ")
@@ -162,7 +162,7 @@ def test_e08_en_un_archivo_sin_jugadas(tmp_path):
     assert errores.startswith("CR7Script: E08 Comentario sin cerrar (línea 1): ")
 
 
-@pytest.mark.parametrize("jugada, codigo", [("Pase de Messi", "E01"), (CERRAR, "E07")])
+@pytest.mark.parametrize("jugada, codigo", [("Pase de Benzema", "E01"), (CERRAR, "E07")])
 def test_e08_pierde_ante_errores_locales_anteriores(tmp_path, jugada, codigo):
     errores = error_de_analisis(tmp_path, f"{CALMA}.\n{jugada}.\n(sin cerrar {SIUUU}")
     assert errores.startswith(f"CR7Script: {codigo} ")
@@ -178,7 +178,7 @@ def test_e09_palabra_no_convocada(tmp_path):
 
 
 def test_e09_se_situa_en_la_jugada_donde_aparece(tmp_path):
-    fuente = programa(AGUA, "Ay mi madre, el Bicho:\n  Ronaldo\n  CR9", "Pase de Messi")
+    fuente = programa(AGUA, "Ay mi madre, el Bicho:\n  Ronaldo\n  CR9", "Pase de Benzema")
     errores = error_de_analisis(tmp_path, fuente)
     assert errores.startswith("CR7Script: E09 No convocado (jugada 3, línea 3): ")
 
@@ -198,20 +198,135 @@ def test_e09_anterior_gana_a_un_e06_posterior(tmp_path):
     assert errores.startswith("CR7Script: E09 No convocado (jugada 2, línea 2): ")
 
 
+# E13 Roja directa
+
+PROHIBIDAS = ["Messi", "Leo", "Lionel", "Pulga", "Lamine", "Yamal", "Mundial", "Qatar", "Penaldo"]
+
+
+def mensaje_e13(palabra, jugada=2, linea=2):
+    return (f"CR7Script: E13 Roja directa (jugada {jugada}, línea {linea}): "
+            f"«{palabra}» es una palabra prohibida\n")
+
+
+@pytest.mark.parametrize("palabra", PROHIBIDAS)
+def test_e13_dentro_de_una_oracion(tmp_path, palabra):
+    # Gana a E09, que también se daría porque la palabra no está convocada.
+    errores = error_de_analisis(tmp_path, programa(f"Ay mi madre, el Bicho: Ronaldo {palabra} yo"))
+    assert errores == mensaje_e13(palabra)
+
+
+@pytest.mark.parametrize("palabra", PROHIBIDAS)
+def test_e13_fuera_de_una_oracion(tmp_path, palabra):
+    # Gana a E01, que también se daría porque la jugada no es ninguna frase.
+    errores = error_de_analisis(tmp_path, programa(f"Pase de {palabra}"))
+    assert errores == mensaje_e13(palabra)
+
+
+@pytest.mark.parametrize("palabra", PROHIBIDAS)
+def test_e13_pegada_a_una_frase_valida(tmp_path, palabra):
+    errores = error_de_analisis(tmp_path, programa(f"{AGUA} {palabra}"))
+    assert errores == mensaje_e13(palabra)
+
+
+@pytest.mark.parametrize("palabra", [
+    "MESSI", "messi", "Messí", "MÉSSI", "léo", "LIONEL", "Pülga", "lamíne", "YAMAL",
+    "mundïal", "QATAR", "Qátar", "PENALDO", "Penáldo",
+])
+def test_e13_con_mayusculas_y_tildes_distintas(tmp_path, palabra):
+    errores = error_de_analisis(tmp_path, programa(f"Ay mi madre, el Bicho: {palabra}"))
+    assert errores == mensaje_e13(palabra)
+
+
+@pytest.mark.parametrize("texto, palabra", [
+    ("¡Messi!", "Messi"),
+    ("¿Leo?", "Leo"),
+    ("Messi:", "Messi"),
+    ("Qatar-2022", "Qatar"),
+    ("Messi10", "Messi"),
+    ("Lamine Yamal", "Lamine"),       # se informa de la primera
+    ("Yamal y Lamine", "Yamal"),
+])
+def test_e13_palabra_a_palabra(tmp_path, texto, palabra):
+    errores = error_de_analisis(tmp_path, programa(f"Pase de {texto}"))
+    assert errores == mensaje_e13(palabra)
+
+
+def test_e13_con_las_palabras_descompuestas_en_nfd(tmp_path):
+    errores = error_de_analisis(tmp_path, programa("Pase de Méssi"))
+    assert errores == mensaje_e13("Méssi")
+
+
+@pytest.mark.parametrize("texto", ["Leopoldo", "MessiScript", "Pulgas", "Qatari"])
+def test_no_es_e13_si_la_palabra_es_otra(tmp_path, texto):
+    errores = error_de_analisis(tmp_path, programa(f"Pase de {texto}"))
+    assert errores.startswith("CR7Script: E01 ")
+
+
+def test_dentro_de_un_comentario_se_permite(tmp_path):
+    fuente = f"{CALMA}. (Messi, Leo, Lionel, Pulga, Lamine Yamal, Mundial, Qatar, Penaldo)\n{SIUUU}"
+    assert lanzar(tmp_path, fuente) == (0, b"", "")
+
+
+def test_e13_en_una_jugada_que_ocupa_varias_lineas(tmp_path):
+    errores = error_de_analisis(tmp_path, programa(f"{MOSTRAR_NUMERO}\n  y Messi"))
+    assert errores == mensaje_e13("Messi")
+
+
+def test_e13_gana_a_e09_aunque_la_no_convocada_vaya_antes(tmp_path):
+    errores = error_de_analisis(tmp_path, programa("Ay mi madre, el Bicho: Siempre Messi"))
+    assert errores == mensaje_e13("Messi")
+
+
+def test_e13_pierde_ante_e03_en_la_primera_jugada(tmp_path):
+    errores = error_de_analisis(tmp_path, f"Messi.\n{SIUUU}")
+    assert errores.startswith("CR7Script: E03 Sin pitido inicial (jugada 1, línea 1): ")
+
+
+def test_e13_pierde_ante_e03_con_la_frase_de_inicio_alterada(tmp_path):
+    errores = error_de_analisis(tmp_path, f"{CALMA}, Messi.\n{SIUUU}")
+    assert errores.startswith("CR7Script: E03 Sin pitido inicial (jugada 1, línea 1): ")
+
+
+@pytest.mark.parametrize("ultima", ["Messi", "¡Siuuu! Messi"])
+def test_e13_pierde_ante_e04_en_la_ultima_jugada(tmp_path, ultima):
+    errores = error_de_analisis(tmp_path, f"{CALMA}.\n{AGUA}.\n{ultima}")
+    assert errores.startswith("CR7Script: E04 Sin pitido final (jugada 3, línea 3): ")
+
+
+def test_e13_pierde_ante_e05_tras_el_pitido_final(tmp_path):
+    errores = error_de_analisis(tmp_path, f"{CALMA}.\n{SIUUU}.\nMessi.")
+    assert errores.startswith("CR7Script: E05 Partido terminado (jugada 3, línea 3): ")
+
+
+def test_e13_anterior_gana_a_errores_posteriores(tmp_path):
+    errores = error_de_analisis(tmp_path, programa("Pase de Leo", "Pase de Benzema", ABRIR))
+    assert errores == mensaje_e13("Leo")
+
+
+def test_errores_anteriores_ganan_a_e13_posterior(tmp_path):
+    errores = error_de_analisis(tmp_path, programa("Pase de Benzema", "Pase de Leo"))
+    assert errores.startswith("CR7Script: E01 Fuera de juego (jugada 2, línea 2): ")
+
+
+def test_e13_anterior_a_un_comentario_sin_cerrar(tmp_path):
+    errores = error_de_analisis(tmp_path, f"{CALMA}.\nPase de Leo.\n(sin cerrar {SIUUU}")
+    assert errores == mensaje_e13("Leo")
+
+
 # Orden de los errores de análisis (§6.1)
 
 def test_se_informa_del_primero_por_posicion(tmp_path):
-    errores = error_de_analisis(tmp_path, programa("Pase de Messi", ABRIR, "Otro pase"))
+    errores = error_de_analisis(tmp_path, programa("Pase de Benzema", ABRIR, "Otro pase"))
     assert errores.startswith("CR7Script: E01 Fuera de juego (jugada 2, línea 2): ")
 
 
 def test_e06_anterior_gana_a_e01_posterior(tmp_path):
-    errores = error_de_analisis(tmp_path, programa(ABRIR, "Pase de Messi"))
+    errores = error_de_analisis(tmp_path, programa(ABRIR, "Pase de Benzema"))
     assert errores.startswith("CR7Script: E06 Récord sin cerrar (jugada 2, línea 2): ")
 
 
 def test_e01_anterior_gana_a_e04(tmp_path):
-    errores = error_de_analisis(tmp_path, f"{CALMA}.\nPase de Messi.\n{AGUA}.")
+    errores = error_de_analisis(tmp_path, f"{CALMA}.\nPase de Benzema.\n{AGUA}.")
     assert errores.startswith("CR7Script: E01 ")
 
 

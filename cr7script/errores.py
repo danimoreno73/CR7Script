@@ -15,10 +15,13 @@ NOMBRES: dict[str, str] = {
     "E10": "Balón fuera",
     "E11": "Revisión del VAR",
     "E12": "Grito ininteligible",
+    "E13": "Roja directa",
 }
 
 # §6.1: si dos errores de análisis caen en la misma posición, ganan los
-# estructurales (E03, E04, E05) y, entre ellos, E03 antes que E04.
+# estructurales (E03, E04, E05), con E03 antes que E04. El orden entre los
+# errores de una misma jugada (E03, luego E13, luego E01/E02/E09) lo decide
+# el parser, que solo registra uno por jugada.
 _PRIORIDAD = {"E03": 0, "E04": 1, "E05": 2}
 _PRIORIDAD_RESTO = 3
 
@@ -43,7 +46,7 @@ class ErrorCR7(Exception):
 
 
 class ErrorAnalisis(ErrorCR7):
-    """Error detectado antes de ejecutar (E01–E09). Código de salida 1."""
+    """Error detectado antes de ejecutar (E01–E09 y E13). Código de salida 1."""
 
     def __init__(self, codigo: str, detalle: str, linea: int,
                  jugada: int | None = None, posicion: int = 0):

@@ -5,9 +5,10 @@ import re
 
 import pytest
 
-from cr7script.frases import normalizar
+from cr7script.frases import FRASES, normalizar
 from cr7script.vocabulario import (
-    AUTOGOL, CONECTORES, ESPECIALES, TEMATICAS, cifra, contar_letras,
+    AUTOGOL, CONECTORES, ESPECIALES, PROHIBIDAS, TEMATICAS, buscar_prohibida, cifra,
+    contar_letras,
 )
 from tests.ayuda import SPEC
 
@@ -70,6 +71,48 @@ def test_autogol_no_es_una_palabra_del_vocabulario():
 def test_solo_los_casos_especiales_tienen_digitos_o_les_faltan_letras():
     for _, palabra in todas_las_palabras():
         assert palabra.isalpha(), palabra
+
+
+def test_las_prohibidas_coinciden_con_el_anexo():
+    seccion = anexo()[anexo().index("### Palabras prohibidas"):]
+    lista = re.search(r"^(`[^`]+`(?:, `[^`]+`)*)$", seccion, re.M).group(1)
+    assert tuple(re.findall(r"`([^`]+)`", lista)) == PROHIBIDAS
+
+
+def test_las_prohibidas_coinciden_con_2_6():
+    texto = SPEC[SPEC.index("### 2.6 Palabras prohibidas"):SPEC.index("## 3. Tabla de comandos")]
+    lista = re.search(r"\[Anexo A\]\([^)]*\): (.*?)\.\n", texto, re.S).group(1)
+    assert tuple(re.findall(r"`([^`]+)`", lista)) == PROHIBIDAS
+
+
+def test_ninguna_prohibida_esta_en_el_vocabulario():
+    for palabra in PROHIBIDAS:
+        assert cifra(normalizar(palabra)) is None, palabra
+    vocabulario = {normalizar(p) for _, p in todas_las_palabras()} | {normalizar(t) for t in ESPECIALES}
+    assert not vocabulario & {normalizar(p) for p in PROHIBIDAS}
+
+
+def test_ninguna_frase_de_comando_tiene_prohibidas():
+    for frase in FRASES.values():
+        assert buscar_prohibida(frase) is None, frase
+
+
+def test_quedan_al_menos_cinco_palabras_en_las_cifras_afectadas():
+    # Messi (5) y Mundial (7) salieron del vocabulario al prohibirse.
+    assert len(TEMATICAS[5]) >= 5 and len(TEMATICAS[7]) >= 5
+    assert "Messi" not in TEMATICAS[5] and "Mundial" not in TEMATICAS[7]
+
+
+@pytest.mark.parametrize("texto, esperado", [
+    ("Pase de Messi", "Messi"),
+    ("¿LÉO?", "LÉO"),
+    ("Qatar-2022", "Qatar"),
+    ("Lamine Yamal", "Lamine"),
+    ("Leopoldo MessiScript", None),
+    ("", None),
+])
+def test_buscar_prohibida(texto, esperado):
+    assert buscar_prohibida(texto) == esperado
 
 
 def test_conectores_cubren_las_cifras_uno_y_dos():

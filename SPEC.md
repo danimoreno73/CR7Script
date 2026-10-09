@@ -1,6 +1,6 @@
 # CR7Script — Especificación del lenguaje
 
-**Versión:** 0.6 (borrador)
+**Versión:** 0.7 (borrador)
 **Extensión de archivo:** `.siu`
 **Codificación del código fuente:** UTF-8
 
@@ -146,6 +146,29 @@ falta el punto antes de ellas, se suman a la oración sin ningún error:
 | `Chilena en Turín` | 7, 2, 5 |
 | `El penalti lo tiro yo` | 2, 7, 2, 4, 2 |
 | `¡Siuuu!` | 5 (y el programa se queda sin fin: `E04`) |
+
+### 2.6 Palabras prohibidas
+
+Hay palabras que no pueden aparecer en ninguna jugada del programa, ni dentro
+de una oración ni fuera de ella. La lista está en el
+[Anexo A](#palabras-prohibidas): `Messi`, `Leo`, `Lionel`, `Pulga`, `Lamine`,
+`Yamal`, `Mundial`, `Qatar` y `Penaldo`.
+
+- Se comparan **palabra a palabra**: `Lamine Yamal` son dos palabras, y
+  basta una para el error.
+- A estos efectos, una palabra es **cada secuencia seguida de letras** de la
+  jugada. Así se detectan también cuando van pegadas a otros signos:
+  `Messi:`, `¿Leo?`, `Qatar-2022` y `Messi10` contienen una palabra prohibida.
+  En cambio, `Leopoldo` o `MessiScript` no, porque la secuencia de letras
+  completa es otra palabra.
+- Se comparan **normalizadas** como en [§2.2](#22-reconocimiento-de-frases):
+  `MESSI`, `Messí` y `léo` también cuentan.
+- Los **comentarios** no son jugadas: dentro de un comentario se puede escribir
+  cualquier palabra.
+
+Una palabra prohibida es el error de análisis `E13` (ver [§6.1](#61-errores-de-análisis-el-partido-no-empieza)).
+En la misma jugada gana a `E01` y a `E09`, de modo que `Pase de Messi` y
+`Ay mi madre, el Bicho: Messi` dan `E13`.
 
 ---
 
@@ -386,15 +409,22 @@ archivo:
 
 | Error | Posición |
 |---|---|
-| `E01`, `E02`, `E03`, `E05`, `E07`, `E09` | La jugada donde ocurre. |
+| `E01`, `E02`, `E03`, `E05`, `E07`, `E09`, `E13` | La jugada donde ocurre. |
 | `E04` | La última jugada. |
 | `E06` | La apertura del bucle que queda sin cerrar. |
 | `E08` | El paréntesis: el `(` sin cerrar o el `)` suelto. |
 | `E03` de archivo sin jugadas | La línea 1. |
 
-**Empates.** Si dos errores caen en la misma jugada, ganan los de inicio y fin
-(`E03`, `E04`, `E05`) a los demás, y `E03` gana a `E04`. Por ejemplo, un
-`¡Siu!` final da `E04` y no `E01`, y un programa que es solo `Agua.` da `E03`.
+**Empates.** Si dos errores caen en la misma jugada, el orden es:
+
+1. Los de inicio y fin (`E03`, `E04`, `E05`), con `E03` antes que `E04`.
+2. `E13`, la palabra prohibida.
+3. Los demás.
+
+Por ejemplo, un `¡Siu!` final da `E04` y no `E01`, y un programa que es solo
+`Agua.` da `E03`. Con palabras prohibidas: `Pase de Messi` da `E13` y no `E01`;
+pero `Messi.` como primera jugada da `E03`, `¡Siuuu! Messi` como última da
+`E04`, y `Messi` detrás de `¡Siuuu!` da `E05`.
 
 **Manda el pitido final.** Después del primer `¡Siuuu!` no se analiza nada
 más: la jugada siguiente da `E05`, aunque también sea desconocida o repita el
@@ -418,6 +448,7 @@ Los demás errores anteriores al paréntesis sí cuentan.
 | `E07` | Récord sin perseguir | Un `Los récords me persiguen a mí` no tiene ningún `Yo no persigo los récords` abierto. |
 | `E08` | Comentario sin cerrar | Falta un `)`, o hay un `)` sin su `(`. |
 | `E09` | No convocado | Una palabra de la oración de una asignación no está en el vocabulario ([Anexo A](#anexo-a-vocabulario-de-la-oración)), o es `autogol` fuera de la primera posición. |
+| `E13` | Roja directa | La jugada contiene una palabra prohibida ([§2.6](#26-palabras-prohibidas)). El mensaje la cita tal como está escrita: `«Messi» es una palabra prohibida`. |
 
 ### 6.2 Errores de ejecución: tarjeta roja
 
@@ -435,7 +466,7 @@ la salida estándar se mantiene. El código de salida es `2`.
 | Código | Significado |
 |---|---|
 | `0` | El programa llegó a `¡Siuuu!` (o lo saltó con un penalti). |
-| `1` | Error de análisis (`E01`–`E09`). |
+| `1` | Error de análisis (`E01`–`E09` y `E13`). |
 | `2` | Error de ejecución (`E10`–`E12`). |
 | `3` | Error de uso: falta el archivo o sobran argumentos, el archivo no se puede leer o no es UTF-8 válido. |
 
@@ -632,9 +663,9 @@ letra. Este anexo y `cr7script/vocabulario.py` deben coincidir.
 | 2 | 2 · 12 | de, el, la, en, al, lo, yo, mi | Pentacampeón, Tetracampeón, Entrenadores, Futbolístico |
 | 3 | 3 · 13 | con, del, los, las, por, que, más | gol, oro, VAR, Old, Nou, Luz, Metropolitano, Entrenamiento, Internacional, Decimotercera, Celebraciones |
 | 4 | 4 | — | Real, Liga, Copa, Bota, Juve, Pepe, Nani, Bale, Kaká, Isco, Xavi, Kiev, Riad, Roma, Camp, City, pase, tiro, giro |
-| 5 | 5 | — | Bicho, Calma, Siuuu, Messi, Turín, Milán, Moscú, París, Nassr, Kroos, Ramos, Bruno, Barça, Piqué, Puyol, Tevez, Giggs, balón, falta, goles, final, póker, siete, salto, grito |
+| 5 | 5 | — | Bicho, Calma, Siuuu, Turín, Milán, Moscú, París, Nassr, Kroos, Ramos, Bruno, Barça, Piqué, Puyol, Tevez, Giggs, balón, falta, goles, final, póker, siete, salto, grito |
 | 6 | 6 | — | Madrid, United, Lisboa, Oporto, Zagreb, España, Aveiro, Modric, Rooney, Dybala, Buffon, Alonso, Varane, Zidane, Bayern, Neymar, Mbappé, Valdés, récord, golazo, remate, regate, dorsal, Décima |
-| 7 | 7 | — | Ronaldo, Funchal, Madeira, Cardiff, Hungría, Polonia, Francia, Benzema, Marcelo, Scholes, Bonucci, Higuaín, Iniesta, Simeone, Chelsea, Allianz, Premier, Mundial, Orejona, penalti, chilena, trivela, doblete, capitán, extremo, campeón, récords |
+| 7 | 7 | — | Ronaldo, Funchal, Madeira, Cardiff, Hungría, Polonia, Francia, Benzema, Marcelo, Scholes, Bonucci, Higuaín, Iniesta, Simeone, Chelsea, Allianz, Premier, Orejona, penalti, chilena, trivela, doblete, capitán, extremo, campeón, récords |
 | 8 | 8 | — | Portugal, Sporting, Juventus, Nacional, Bernabéu, Alvalade, Trafford, Marsella, Budapest, Casillas, Moutinho, Quaresma, Carvajal, Ferguson, Mourinho, Atlético, Eurocopa, Pichichi, Scudetto, Undécima, Triplete, Cabezazo, Goleador, penaltis |
 | 9 | 9 | — | Cristiano, Champions, Andorinha, Selección, Barcelona, Liverpool, Argentina, Ferdinand, Chiellini, Ancelotti, Fernandes, Guardiola, Supercopa, Duodécima, Bicicleta, Delantero, Remontada, Campeones |
 
@@ -650,3 +681,10 @@ sin letras (`—`, `9`, `CR9`…) es `E09`.
 |---|---|---|
 | `7` | 7 | Su dorsal. |
 | `CR7` | 3 | Sus tres caracteres. |
+
+### Palabras prohibidas
+
+No pueden aparecer en ninguna jugada ([§2.6](#26-palabras-prohibidas)). Se
+comparan normalizadas y ninguna está en el vocabulario de arriba.
+
+`Messi`, `Leo`, `Lionel`, `Pulga`, `Lamine`, `Yamal`, `Mundial`, `Qatar`, `Penaldo`

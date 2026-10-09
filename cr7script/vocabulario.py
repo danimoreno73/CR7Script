@@ -1,12 +1,14 @@
-"""Vocabulario cerrado de la oración de «Ay mi madre, el Bicho:» (SPEC.md Anexo A).
+"""Vocabulario de CR7Script (SPEC.md Anexo A).
 
-Es la única lista de palabras que el intérprete admite en una oración. Si
-cambia, se cambia aquí y en el Anexo A de SPEC.md; tests/test_vocabulario.py
-comprueba que los dos coinciden.
+Contiene la única lista de palabras que el intérprete admite en la oración de
+«Ay mi madre, el Bicho:» y la lista de palabras prohibidas en cualquier
+jugada. Si cambian, se cambian aquí y en el Anexo A de SPEC.md;
+tests/test_vocabulario.py comprueba que coinciden.
 """
 
 from __future__ import annotations
 
+import re
 import unicodedata
 
 from .frases import normalizar
@@ -31,7 +33,7 @@ TEMATICAS: dict[int, tuple[str, ...]] = {
         "Internacional", "Decimotercera", "Celebraciones"),
     4: ("Real", "Liga", "Copa", "Bota", "Juve", "Pepe", "Nani", "Bale", "Kaká", "Isco",
         "Xavi", "Kiev", "Riad", "Roma", "Camp", "City", "pase", "tiro", "giro"),
-    5: ("Bicho", "Calma", "Siuuu", "Messi", "Turín", "Milán", "Moscú", "París", "Nassr",
+    5: ("Bicho", "Calma", "Siuuu", "Turín", "Milán", "Moscú", "París", "Nassr",
         "Kroos", "Ramos", "Bruno", "Barça", "Piqué", "Puyol", "Tevez", "Giggs", "balón",
         "falta", "goles", "final", "póker", "siete", "salto", "grito"),
     6: ("Madrid", "United", "Lisboa", "Oporto", "Zagreb", "España", "Aveiro", "Modric",
@@ -39,7 +41,7 @@ TEMATICAS: dict[int, tuple[str, ...]] = {
         "Mbappé", "Valdés", "récord", "golazo", "remate", "regate", "dorsal", "Décima"),
     7: ("Ronaldo", "Funchal", "Madeira", "Cardiff", "Hungría", "Polonia", "Francia",
         "Benzema", "Marcelo", "Scholes", "Bonucci", "Higuaín", "Iniesta", "Simeone",
-        "Chelsea", "Allianz", "Premier", "Mundial", "Orejona", "penalti", "chilena",
+        "Chelsea", "Allianz", "Premier", "Orejona", "penalti", "chilena",
         "trivela", "doblete", "capitán", "extremo", "campeón", "récords"),
     8: ("Portugal", "Sporting", "Juventus", "Nacional", "Bernabéu", "Alvalade",
         "Trafford", "Marsella", "Budapest", "Casillas", "Moutinho", "Quaresma",
@@ -73,3 +75,22 @@ _CIFRAS.update({normalizar(token): cifra for token, cifra in ESPECIALES.items()}
 def cifra(palabra_normalizada: str) -> int | None:
     """Cifra que aporta una palabra ya normalizada, o None si no está convocada."""
     return _CIFRAS.get(palabra_normalizada)
+
+
+# §2.6: prohibidas en cualquier jugada, dentro o fuera de una oración.
+PROHIBIDAS: tuple[str, ...] = (
+    "Messi", "Leo", "Lionel", "Pulga", "Lamine", "Yamal", "Mundial", "Qatar", "Penaldo",
+)
+
+_PROHIBIDAS = frozenset(normalizar(p) for p in PROHIBIDAS)
+
+# Una palabra, a efectos de §2.6, es cada secuencia seguida de letras.
+_PALABRA = re.compile(r"[^\W\d_]+")
+
+
+def buscar_prohibida(texto: str) -> str | None:
+    """Primera palabra prohibida del texto, tal como está escrita, o None."""
+    for palabra in _PALABRA.findall(unicodedata.normalize("NFC", texto)):
+        if normalizar(palabra) in _PROHIBIDAS:
+            return palabra
+    return None

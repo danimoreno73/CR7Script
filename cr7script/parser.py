@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from .errores import ErrorAnalisis
 from .frases import FRASES, PREFIJO_ASIGNAR, Op, normalizar, reconocer
 from .lexer import Jugada, separar
-from .vocabulario import AUTOGOL, cifra
+from .vocabulario import AUTOGOL, buscar_prohibida, cifra
 
 
 @dataclass(frozen=True)
@@ -101,6 +101,7 @@ def analizar(fuente: str) -> Programa:
                 "E05", f"el partido ya terminó con «{FRASES[Op.FIN]}»", jugada))
             break
         resultado = _clasificar(jugada)
+        prohibida = buscar_prohibida(jugada.texto)
         es_inicio = isinstance(resultado, Instruccion) and resultado.op is Op.INICIO
         if jugada.numero == 1 and not es_inicio:
             errores.append(_error(
@@ -108,6 +109,9 @@ def analizar(fuente: str) -> Programa:
         elif jugada.numero > 1 and es_inicio:
             errores.append(_error(
                 "E03", f"«{FRASES[Op.INICIO]}» solo puede ir al principio", jugada))
+        elif prohibida is not None:
+            # §2.6: gana a E01 y E09 en la misma jugada.
+            errores.append(_error("E13", f"«{prohibida}» es una palabra prohibida", jugada))
         elif isinstance(resultado, ErrorAnalisis):
             errores.append(resultado)
         if isinstance(resultado, Instruccion):

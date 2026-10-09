@@ -43,7 +43,7 @@ def test_bom_al_principio_se_ignora(tmp_path):
 
 
 def test_bom_no_cambia_las_lineas(tmp_path):
-    codigo, _, errores = lanzar(tmp_path, "﻿" + programa("Pase de Messi"))
+    codigo, _, errores = lanzar(tmp_path, "﻿" + programa("Pase de Benzema"))
     assert codigo == 1
     assert errores.startswith("CR7Script: E01 Fuera de juego (jugada 2, línea 2): ")
 
