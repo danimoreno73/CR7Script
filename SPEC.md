@@ -1,6 +1,6 @@
 # CR7Script — Especificación del lenguaje
 
-**Versión:** 0.7 (borrador)
+**Versión:** 0.8 (borrador)
 **Extensión de archivo:** `.siu`
 **Codificación del código fuente:** UTF-8
 
@@ -311,12 +311,19 @@ Yo no persigo los récords.
 Los récords me persiguen a mí.
 ```
 
-- **`Yo no persigo los récords`**: si la celda actual vale `0`, salta a la
-  jugada siguiente a su `Los récords me persiguen a mí` emparejado. Si no, sigue
-  con normalidad.
-- **`Los récords me persiguen a mí`**: si la celda actual **no** vale `0`,
+El cuerpo se ejecuta mientras la celda actual sea **mayor que `0`**:
+
+- **`Yo no persigo los récords`**: si la celda actual vale `0` o menos, salta a
+  la jugada siguiente a su `Los récords me persiguen a mí` emparejado. Si es
+  mayor que `0`, sigue con normalidad.
+- **`Los récords me persiguen a mí`**: si la celda actual es **mayor que `0`**,
   vuelve a la jugada siguiente a su `Yo no persigo los récords` emparejado. Si
-  vale `0`, sigue.
+  vale `0` o menos, sigue.
+
+Así, un bucle con la celda en negativo no se ejecuta, y un contador que se pasa
+de `0` hacia los negativos también lo termina. La condición del penalti
+([§5.3](#53-el-penalti-lo-tiro-yo)) no cambia: sigue siendo que la celda valga
+exactamente `0`.
 
 Los bucles se pueden anidar. La pareja de cada apertura y cada cierre se
 calcula una sola vez, **antes** de ejecutar nada. Un bucle sin cerrar (`E06`) o
@@ -586,8 +593,8 @@ Comprobación de las oraciones:
 ### 8.2 Cuenta atrás (bucle y mecánicas propias)
 
 Lee un número `n` y escribe `n`, `n-1`, …, `1`, uno por línea. Usa la celda `0`
-como contador y la `1` para el salto de línea. Si `n` es `0`, no escribe nada.
-Si `n` es negativo, el bucle no termina nunca.
+como contador y la `1` para el salto de línea. Si `n` es `0` o negativo, no
+escribe nada.
 
 ```
 Calma, calma, estoy aquí.

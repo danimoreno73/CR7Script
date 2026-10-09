@@ -2,7 +2,7 @@
 
 from tests.ayuda import (
     ABRIR, BICHO, CERRAR, COPIAR, DERECHA, IZQUIERDA, MOSTRAR_CARACTER,
-    MOSTRAR_NUMERO, PEGAR, PENALTI, SUMAR, asignar, correr,
+    MOSTRAR_NUMERO, PEGAR, PENALTI, SUMAR, asignar, correr, correr_aparte,
 )
 
 
@@ -20,6 +20,45 @@ def test_bucle_se_repite_hasta_que_la_celda_vale_cero():
     _, salida = correr(*decrementar(), asignar(3),
                        ABRIR, MOSTRAR_NUMERO, SUMAR, CERRAR)
     assert salida == b"321"
+
+
+# Los tests con celdas negativas usan correr_aparte(): con la regla antigua
+# («distinta de 0») serían bucles infinitos.
+
+def test_bucle_con_celda_negativa_no_entra():
+    salida = correr_aparte(asignar(-3), ABRIR, MOSTRAR_NUMERO, CERRAR)
+    assert salida == b""
+
+
+def test_bucle_termina_si_la_celda_pasa_a_negativo():
+    # 3, 1, -1: el cierre ve -1 y no vuelve atrás.
+    salida = correr_aparte(asignar(-2), COPIAR, asignar(3),
+                           ABRIR, MOSTRAR_NUMERO, SUMAR, CERRAR, MOSTRAR_NUMERO)
+    assert salida == b"31-1"
+
+
+def test_cierre_con_celda_negativa_no_vuelve():
+    # El penalti salta la apertura y el cuerpo deja la celda en negativo.
+    salida = correr_aparte(PENALTI, ABRIR, asignar(-1), MOSTRAR_NUMERO, CERRAR,
+                           asignar(7), MOSTRAR_NUMERO)
+    assert salida == b"-17"
+
+
+def test_bucle_interior_con_celda_negativa_no_entra():
+    salida = correr_aparte(
+        *decrementar(), asignar(2),
+        ABRIR,
+            DERECHA, asignar(-5), ABRIR, asignar(9), MOSTRAR_NUMERO, CERRAR, IZQUIERDA,
+            MOSTRAR_NUMERO, SUMAR,
+        CERRAR,
+    )
+    assert salida == b"21"
+
+
+def test_el_penalti_sigue_mirando_solo_el_cero():
+    # Con -1 el bucle no entraría, pero el penalti se marca.
+    _, salida = correr(asignar(-1), PENALTI, asignar(7), MOSTRAR_NUMERO)
+    assert salida == b"7"
 
 
 def test_bucles_anidados_dibujan_un_triangulo():

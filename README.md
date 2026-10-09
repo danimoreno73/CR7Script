@@ -92,8 +92,8 @@ comentario.
 | 8 | `¿Eres de Málaga? Quichiano, quichiano` | Escribe la celda como carácter Unicode. |
 | 9 | `Más un poco y estás aquí, madre mía hijo mío` | Lee un número entero (una línea). |
 | 10 | `Anda a patear, muestra personalidad` | Lee un carácter (0 al final de la entrada). |
-| 11 | `Yo no persigo los récords` | Abre un bucle: si la celda vale `0`, salta tras su cierre. |
-| 12 | `Los récords me persiguen a mí` | Cierra el bucle: si la celda no vale `0`, vuelve a su apertura. |
+| 11 | `Yo no persigo los récords` | Abre un bucle: si la celda no es mayor que `0`, salta tras su cierre. |
+| 12 | `Los récords me persiguen a mí` | Cierra el bucle: si la celda es mayor que `0`, vuelve a su apertura. |
 | 13 | `Me tienen envidia` | Copia la celda en el portapapeles. |
 | 14 | `Rico, guapo y gran jugador` | Pega el portapapeles en la celda. |
 | 15 | `Chilena en Turín` | Intercambia la celda y el portapapeles. |

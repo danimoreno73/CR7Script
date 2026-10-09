@@ -8,6 +8,9 @@ from __future__ import annotations
 
 import io
 import re
+import subprocess
+import sys
+import tempfile
 from pathlib import Path
 
 from cr7script import analizar, ejecutar
@@ -60,6 +63,24 @@ def correr(*jugadas: str, entrada: bytes = b""):
     salida = io.BytesIO()
     estado = ejecutar(analizar(programa(*jugadas)), io.BytesIO(entrada), salida)
     return estado, salida.getvalue()
+
+
+def correr_aparte(*jugadas: str, entrada: bytes = b"", limite: float = 30) -> bytes:
+    """Como correr(), pero en otro proceso y con límite de tiempo.
+
+    Para programas que, si el intérprete fallara, se quedarían en un bucle
+    infinito: así el test falla por tiempo en vez de colgar la suite.
+    Devuelve los bytes escritos y comprueba que el programa termina bien.
+    """
+    with tempfile.TemporaryDirectory() as carpeta:
+        archivo = Path(carpeta) / "programa.siu"
+        archivo.write_text(programa(*jugadas), encoding="utf-8")
+        resultado = subprocess.run(
+            [sys.executable, "-m", "cr7script", str(archivo)],
+            input=entrada, capture_output=True, timeout=limite, cwd=RAIZ,
+        )
+    assert (resultado.returncode, resultado.stderr) == (0, b"")
+    return resultado.stdout
 
 
 def lanzar(tmp_path: Path, fuente: str | bytes, entrada: bytes = b""):

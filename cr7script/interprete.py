@@ -99,10 +99,10 @@ def ejecutar(programa: Programa, entrada: BinaryIO, salida: BinaryIO) -> Estado:
         elif op is Op.LEER_CARACTER:
             estado.celda = _leer_caracter(lector, ins)
         elif op is Op.ABRIR_BUCLE:
-            if estado.celda == 0:
+            if estado.celda <= 0:
                 pc = ins.pareja
         elif op is Op.CERRAR_BUCLE:
-            if estado.celda != 0:
+            if estado.celda > 0:
                 pc = ins.pareja
         elif op is Op.COPIAR:
             estado.portapapeles = estado.celda

@@ -2,6 +2,8 @@
 
 import io
 import re
+import subprocess
+import sys
 
 import pytest
 
@@ -71,6 +73,18 @@ def test_eco(entrada, esperado):
 ])
 def test_fibonacci(entrada, esperado):
     assert ejecutar_ejemplo("fibonacci.siu", entrada) == (0, esperado)
+
+
+@pytest.mark.parametrize("nombre", ["cuenta_atras.siu", "fibonacci.siu"])
+@pytest.mark.parametrize("entrada", [b"-1\n", b"-5\n", b"-123456789\n"])
+def test_entrada_negativa_no_escribe_nada_y_termina(nombre, entrada):
+    # En un proceso aparte, para que un bucle infinito falle por tiempo y no
+    # cuelgue el resto de tests.
+    resultado = subprocess.run(
+        [sys.executable, "-m", "cr7script", str(EJEMPLOS / nombre)],
+        input=entrada, capture_output=True, timeout=30, cwd=RAIZ,
+    )
+    assert (resultado.returncode, resultado.stdout, resultado.stderr) == (0, b"", b"")
 
 
 def test_fibonacci_con_precision_arbitraria():
