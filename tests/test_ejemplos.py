@@ -1,4 +1,4 @@
-"""Los ejemplos de SPEC.md §8 y sus copias en ejemplos/."""
+"""Los programas de ejemplos/, incluidos los de SPEC.md §8."""
 
 import io
 import re
@@ -6,7 +6,7 @@ import re
 import pytest
 
 from cr7script.__main__ import main
-from cr7script.frases import Op
+from cr7script.frases import Op, normalizar
 from cr7script.parser import analizar
 from tests.ayuda import RAIZ, SPEC
 
@@ -92,3 +92,14 @@ def test_los_ejemplos_usan_las_mecanicas_propias():
         for ins in analizar(archivo.read_text(encoding="utf-8")).instrucciones
     }
     assert {Op.CHILENA, Op.SUMAR, Op.PENALTI} <= usadas
+
+
+def test_algun_ejemplo_usa_los_casos_especiales():
+    palabras = {
+        normalizar(palabra)
+        for archivo in EJEMPLOS.glob("*.siu")
+        for linea in archivo.read_text(encoding="utf-8").splitlines()
+        if linea.startswith("Ay mi madre, el Bicho:")
+        for palabra in linea.split(":", 1)[1].rstrip(".").split()
+    }
+    assert {"7", "cr7"} <= palabras

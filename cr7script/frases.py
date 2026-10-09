@@ -61,9 +61,6 @@ _SIGNOS_IGNORADOS = str.maketrans("", "", "¡!¿?,;")
 # §4.1: el fin admite tres «u» o más.
 PATRON_FIN = re.compile(r"siu{3,}")
 
-# §4.2: palabra que, al principio de la oración, la vuelve negativa.
-AUTOGOL = "autogol"
-
 
 def normalizar(texto: str) -> str:
     """Normaliza un texto según §2.2."""

@@ -47,7 +47,7 @@ def test_e01_variantes(tmp_path, jugada):
 
 # E02 Bicho sin balón
 
-@pytest.mark.parametrize("oracion", ["", "   ", "autogol", "¡ 7 —", "¡Autogol!"])
+@pytest.mark.parametrize("oracion", ["", "   ", "autogol", "¡ , !", "¡Autogol!", "autogol ¡"])
 def test_e02_oracion_sin_cifras(tmp_path, oracion):
     errores = error_de_analisis(tmp_path, programa(f"Ay mi madre, el Bicho:{oracion}"))
     assert errores == "CR7Script: E02 Bicho sin balón (jugada 2, línea 2): la oración no aporta ninguna cifra\n"
@@ -167,6 +167,35 @@ def test_e08_pierde_ante_errores_locales_anteriores(tmp_path, jugada, codigo):
     errores = error_de_analisis(tmp_path, f"{CALMA}.\n{jugada}.\n(sin cerrar {SIUUU}")
     assert errores.startswith(f"CR7Script: {codigo} ")
     assert "(jugada 2, línea 2)" in errores
+
+
+# E09 No convocado
+
+def test_e09_palabra_no_convocada(tmp_path):
+    errores = error_de_analisis(tmp_path, programa("Ay mi madre, el Bicho: Ronaldo Siempre yo"))
+    assert errores == ("CR7Script: E09 No convocado (jugada 2, línea 2): "
+                       "«Siempre» no está en la lista de convocados\n")
+
+
+def test_e09_se_situa_en_la_jugada_donde_aparece(tmp_path):
+    fuente = programa(AGUA, "Ay mi madre, el Bicho:\n  Ronaldo\n  CR9", "Pase de Messi")
+    errores = error_de_analisis(tmp_path, fuente)
+    assert errores.startswith("CR7Script: E09 No convocado (jugada 3, línea 3): ")
+
+
+def test_e09_pierde_ante_e03_en_la_misma_jugada(tmp_path):
+    errores = error_de_analisis(tmp_path, f"Ay mi madre, el Bicho: Siempre.\n{SIUUU}")
+    assert errores.startswith("CR7Script: E03 ")
+
+
+def test_e09_pierde_ante_e04_en_la_misma_jugada(tmp_path):
+    errores = error_de_analisis(tmp_path, f"{CALMA}.\nAy mi madre, el Bicho: Siempre.")
+    assert errores.startswith("CR7Script: E04 ")
+
+
+def test_e09_anterior_gana_a_un_e06_posterior(tmp_path):
+    errores = error_de_analisis(tmp_path, programa("Ay mi madre, el Bicho: —", ABRIR))
+    assert errores.startswith("CR7Script: E09 No convocado (jugada 2, línea 2): ")
 
 
 # Orden de los errores de análisis (§6.1)

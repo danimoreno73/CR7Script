@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-import unicodedata
 from dataclasses import dataclass
 
 from .errores import ErrorAnalisis
-from .frases import AUTOGOL, FRASES, PREFIJO_ASIGNAR, Op, normalizar, reconocer
+from .frases import FRASES, PREFIJO_ASIGNAR, Op, normalizar, reconocer
 from .lexer import Jugada, separar
+from .vocabulario import AUTOGOL, cifra
 
 
 @dataclass(frozen=True)
@@ -24,22 +24,30 @@ class Programa:
     instrucciones: list[Instruccion]
 
 
-def contar_letras(palabra: str) -> int:
-    return sum(1 for c in unicodedata.normalize("NFC", palabra)
-               if unicodedata.category(c).startswith("L"))
+class PalabraNoConvocada(Exception):
+    """Una palabra de la oración no está en el vocabulario (Anexo A)."""
+
+    def __init__(self, palabra: str):
+        self.palabra = palabra
+        super().__init__(palabra)
 
 
 def valor_oracion(oracion: str) -> int | None:
-    """Valor de una oración según §4.2, o None si no aporta ninguna cifra."""
-    palabras = oracion.split()
-    negativo = bool(palabras) and normalizar(palabras[0]) == AUTOGOL
+    """Valor de una oración según §4.2, o None si no aporta ninguna cifra.
+
+    Lanza PalabraNoConvocada con la primera palabra que no está convocada.
+    """
+    # Las palabras que se quedan vacías al normalizar («¡», «,») no existen.
+    palabras = [(p, n) for p in oracion.split() if (n := normalizar(p))]
+    negativo = bool(palabras) and palabras[0][1] == AUTOGOL
     if negativo:
         palabras = palabras[1:]
     valor = None
-    for palabra in palabras:
-        letras = contar_letras(palabra)
-        if letras:
-            valor = (valor or 0) * 10 + letras % 10
+    for original, normalizada in palabras:
+        valor_palabra = cifra(normalizada)
+        if valor_palabra is None:
+            raise PalabraNoConvocada(original)
+        valor = (valor or 0) * 10 + valor_palabra
     if valor is None:
         return None
     return -valor if negativo else valor
@@ -50,12 +58,15 @@ def _error(codigo: str, detalle: str, jugada: Jugada) -> ErrorAnalisis:
 
 
 def _clasificar(jugada: Jugada) -> Instruccion | ErrorAnalisis:
-    """Reconoce una jugada suelta. Puede devolver E01 o E02."""
+    """Reconoce una jugada suelta. Puede devolver E01, E02 o E09."""
     if ":" in jugada.texto:
         prefijo, oracion = jugada.texto.split(":", 1)
         if normalizar(prefijo) != PREFIJO_ASIGNAR:
             return _error("E01", f"no conozco la jugada «{_resumen(jugada.texto)}»", jugada)
-        valor = valor_oracion(oracion)
+        try:
+            valor = valor_oracion(oracion)
+        except PalabraNoConvocada as e:
+            return _error("E09", f"«{e.palabra}» no está en la lista de convocados", jugada)
         if valor is None:
             return _error("E02", "la oración no aporta ninguna cifra", jugada)
         return Instruccion(Op.ASIGNAR, jugada, valor=valor)

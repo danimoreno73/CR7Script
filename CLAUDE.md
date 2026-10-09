@@ -61,16 +61,22 @@ Ejecutar un solo archivo de tests:
 - Cuando se cambia la spec, se sube su número de versión.
 - Los ejemplos de SPEC.md §8 existen también como archivos en `ejemplos/`, y hay
   tests que comprueban su salida exacta. Si se cambia uno, se cambia el otro.
+- Las frases de los comandos viven solo en `cr7script/frases.py`, y el
+  vocabulario de la oración solo en `cr7script/vocabulario.py`. Cada uno tiene su
+  copia en SPEC.md (§3 y Anexo A) y un test que comprueba que coinciden.
+- Los programas de `ejemplos/` no llevan comentarios, y sus oraciones solo usan
+  palabras del Anexo A.
 
 ## Errores
 
 - Los mensajes de error van **en español** y usan los códigos y nombres de
-  SPEC.md §6: `E01`–`E08` para los errores de análisis y `E10`–`E12` para los
-  de ejecución. No existe `E09`.
+  SPEC.md §6: `E01`–`E09` para los errores de análisis y `E10`–`E12` para los
+  de ejecución.
 - Formato, en la salida de errores:
   `CR7Script: <código> <nombre> (jugada <n>, línea <l>): <detalle>`
-- Códigos de salida: `0` si todo va bien, `1` si hay un error de análisis y `2`
-  si hay un error de ejecución.
+- Códigos de salida: `0` si todo va bien, `1` si hay un error de análisis, `2`
+  si hay un error de ejecución y `3` si hay un error de uso (argumentos o
+  archivo ilegible).
 - Los errores de análisis se detectan todos antes de ejecutar ninguna jugada.
 - Cada código de error tiene al menos un test que comprueba el código, el
   mensaje y el código de salida.

@@ -1,6 +1,6 @@
 # CR7Script — Especificación del lenguaje
 
-**Versión:** 0.5 (borrador)
+**Versión:** 0.6 (borrador)
 **Extensión de archivo:** `.siu`
 **Codificación del código fuente:** UTF-8
 
@@ -52,8 +52,8 @@ Un programa es una secuencia de **jugadas** separadas por puntos (`.`).
 > **Cuidado:** solo el punto separa jugadas. Los signos `!` y `?` **no**, ni
 > tampoco los saltos de línea. Si una jugada acaba en `?` o `!`, necesita su
 > punto igualmente: `¡Gol, gol!.` Sin él, se une a la siguiente y el resultado
-> es un `E01` o, dentro de una asignación, una oración más larga de lo que se
-> pretendía. Por la misma razón, `¿Eres de Málaga? Quichiano, quichiano` es
+> es un `E01` o, detrás de una asignación, casi siempre un `E09` (ver
+> [§2.5](#25-agua-dentro-de-una-oración)). Por la misma razón, `¿Eres de Málaga? Quichiano, quichiano` es
 > **una sola** jugada: el `?` del medio no la corta. La única excepción es
 > `¡Siuuu!`, que es la última jugada y no necesita punto.
 
@@ -127,14 +127,25 @@ Forma normalizada de cada frase:
 accidente dentro de una asignación:
 
 - Una asignación es **una sola jugada**. Todo lo que va detrás de sus dos puntos
-  es oración, y en la oración cada palabra solo cuenta letras. Así,
-  `Ay mi madre, el Bicho: agua` asigna `4` y **no** pone la celda a cero.
+  es oración, y la oración solo admite palabras del vocabulario
+  ([Anexo A](#anexo-a-vocabulario-de-la-oración)). `agua` no está convocada,
+  así que `Ay mi madre, el Bicho: agua` es `E09`: nunca pone la celda a cero.
 - Una jugada solo es `Agua` si, normalizada, es exactamente `agua`. `Agua fría`
   o `Agua: algo` son `E01`.
-- La única forma de que `Agua` se mezcle con una oración es olvidar el punto que
-  las separa (ver el aviso de [§2.1](#21-jugadas-comandos)):
-  `Ay mi madre, el Bicho: Siempre yo` + salto de línea + `Agua.` es **una**
-  jugada con la oración `Siempre yo Agua`, que vale `724`.
+- Si se olvida el punto que separa una asignación de la jugada siguiente
+  (ver el aviso de [§2.1](#21-jugadas-comandos)), las palabras de esa jugada
+  pasan a la oración. Casi todas las frases tienen alguna palabra no
+  convocada, así que el error se detecta: `Ay mi madre, el Bicho: Ronaldo yo`
+  + salto de línea + `Agua.` da `E09` por `Agua`.
+
+**Excepción:** tres frases están formadas solo por palabras convocadas. Si
+falta el punto antes de ellas, se suman a la oración sin ningún error:
+
+| Frase | Cifras que añade a la oración |
+|---|---|
+| `Chilena en Turín` | 7, 2, 5 |
+| `El penalti lo tiro yo` | 2, 7, 2, 4, 2 |
+| `¡Siuuu!` | 5 (y el programa se queda sin fin: `E04`) |
 
 ---
 
@@ -187,47 +198,65 @@ Ay mi madre, el Bicho: <oración>
 La jugada se parte por el **primer** `:`. La parte de la izquierda, normalizada,
 tiene que ser `ay mi madre el bicho`. La parte de la derecha es la **oración**.
 
-El valor de la oración se calcula **contando letras**: cada palabra aporta una
-cifra decimal, que es su número de letras módulo 10.
+La oración solo admite palabras de un **vocabulario cerrado** de temática
+Cristiano Ronaldo, que está en el [Anexo A](#anexo-a-vocabulario-de-la-oración).
+Cada palabra aporta una cifra decimal: su número de letras módulo 10.
 
 1. La oración se divide en palabras por los espacios en blanco.
-2. De cada palabra se cuentan solo las **letras** (caracteres Unicode de la
-   categoría `L`, tras normalizar a NFC). Tildes y eñes cuentan como una letra:
-   `Turín` tiene 5. Los signos, dígitos y guiones no cuentan: `hat-trick` tiene 8.
-3. Las palabras con 0 letras (`¡`, `—`, `7`…) se ignoran por completo.
-4. Cada palabra restante aporta la cifra `letras mod 10`:
+2. Cada palabra se normaliza como en [§2.2](#22-reconocimiento-de-frases):
+   minúsculas, sin tildes y sin los signos `¡ ! ¿ ? , ;`. Así, `Turín`, `turin`,
+   `TURÍN` y `¡Turín!` son la misma palabra.
+3. Las palabras que se quedan vacías al normalizar (`¡`, `,`, `!`…) se ignoran
+   por completo, como si no estuvieran.
+4. **Autogol:** si la primera palabra es `autogol`, no aporta ninguna cifra y el
+   resultado es **negativo**. En cualquier otra posición, `autogol` es `E09`.
+5. Cada palabra restante tiene que estar en el vocabulario y aporta la cifra que
+   indica el anexo, que es su número de letras módulo 10 (las tildes cuentan
+   como una letra):
 
-   | Letras | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | … |
+   | Letras | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 |
    |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-   | Cifra | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 0 | 1 | 2 | … |
+   | Cifra | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 0 | 1 | 2 | 3 |
 
-5. Las cifras, en orden, se leen como un número decimal. Los ceros a la izquierda
+   Hay dos **casos especiales**, los únicos tokens con dígitos admitidos: `7`
+   aporta la cifra `7` (su dorsal) y `CR7` aporta la cifra `3` (sus tres
+   caracteres). Cualquier otra palabra que no esté en el anexo, incluidas las que
+   tienen dígitos o no tienen letras (`—`, `9`, `CR9`, `hat-trick`), es el error
+   de análisis `E09`. Se informa de la primera.
+6. Las cifras, en orden, se leen como un número decimal. Los ceros a la izquierda
    no importan.
-6. **Autogol:** si la primera palabra (normalizada) es `autogol`, no aporta
-   ninguna cifra y el resultado es **negativo**.
 7. El resultado **sustituye** al valor de la celda actual (no se suma).
 
 Las palabras de la oración nunca se interpretan como comandos, aunque
 coincidan con uno (ver [§2.5](#25-agua-dentro-de-una-oración)).
 
-Si la oración no tiene ninguna palabra que aporte cifra (está vacía, o solo
-contiene `autogol`), es un error de análisis (`E02`).
+Si todas las palabras están convocadas pero ninguna aporta cifra (la oración
+está vacía, o solo contiene `autogol` y signos), es un error de análisis
+(`E02`).
 
 La oración no puede contener puntos, que separan jugadas, ni paréntesis, que
 abren comentarios.
 
 **Ejemplos:**
 
-| Jugada | Letras por palabra | Valor |
+| Jugada | Cifras | Valor |
 |---|---|---|
 | `Ay mi madre, el Bicho: Cristiano Ronaldo` | 9, 7 | `97` |
-| `Ay mi madre, el Bicho: Siempre yo` | 7, 2 | `72` |
-| `Ay mi madre, el Bicho: A Portuguesa` | 1, 10 | `10` |
+| `Ay mi madre, el Bicho: Ronaldo yo` | 7, 2 | `72` |
+| `Ay mi madre, el Bicho: A Portuguesa` | 1, 0 | `10` |
 | `Ay mi madre, el Bicho: ¡Gol, gol!` | 3, 3 | `33` |
-| `Ay mi madre, el Bicho: Madridistas y portugueses` | 11, 1, 11 | `111` |
-| `Ay mi madre, el Bicho: agua` | 4 | `4` |
+| `Ay mi madre, el Bicho: Madridistas y portugueses` | 1, 1, 1 | `111` |
 | `Ay mi madre, el Bicho: autogol y` | — , 1 | `-1` |
-| `Ay mi madre, el Bicho: Portuguesa` | 10 | `0` |
+| `Ay mi madre, el Bicho: Portuguesa` | 0 | `0` |
+| `Ay mi madre, el Bicho: 7` | 7 | `7` |
+| `Ay mi madre, el Bicho: 7 de` | 7, 2 | `72` |
+| `Ay mi madre, el Bicho: CR7` | 3 | `3` |
+| `Ay mi madre, el Bicho: CR7 7` | 3, 7 | `37` |
+
+Y algunos casos de `E09`: `Ay mi madre, el Bicho: Siempre yo` (`Siempre` no
+está convocada), `Ay mi madre, el Bicho: y autogol` (`autogol` fuera de la
+primera posición), `Ay mi madre, el Bicho: Siuuuu` (solo vale `Siuuu`, con cinco
+letras) y `Ay mi madre, el Bicho: CR9`.
 
 ### 4.3 Entrada y salida
 
@@ -312,7 +341,7 @@ es la única forma de restar:
 ```
 Ay mi madre, el Bicho: autogol y.     (celda = -1)
 Me tienen envidia.                    (portapapeles = -1)
-Ay mi madre, el Bicho: Siempre yo.    (celda = 72)
+Ay mi madre, el Bicho: Ronaldo yo.    (celda = 72)
 Losh dosh.                            (celda = 71)
 ```
 
@@ -357,7 +386,7 @@ archivo:
 
 | Error | Posición |
 |---|---|
-| `E01`, `E02`, `E03`, `E05`, `E07` | La jugada donde ocurre. |
+| `E01`, `E02`, `E03`, `E05`, `E07`, `E09` | La jugada donde ocurre. |
 | `E04` | La última jugada. |
 | `E06` | La apertura del bucle que queda sin cerrar. |
 | `E08` | El paréntesis: el `(` sin cerrar o el `)` suelto. |
@@ -388,6 +417,7 @@ Los demás errores anteriores al paréntesis sí cuentan.
 | `E06` | Récord sin cerrar | **Bucle sin cerrar:** un `Yo no persigo los récords` no tiene su `Los récords me persiguen a mí`. |
 | `E07` | Récord sin perseguir | Un `Los récords me persiguen a mí` no tiene ningún `Yo no persigo los récords` abierto. |
 | `E08` | Comentario sin cerrar | Falta un `)`, o hay un `)` sin su `(`. |
+| `E09` | No convocado | Una palabra de la oración de una asignación no está en el vocabulario ([Anexo A](#anexo-a-vocabulario-de-la-oración)), o es `autogol` fuera de la primera posición. |
 
 ### 6.2 Errores de ejecución: tarjeta roja
 
@@ -405,7 +435,7 @@ la salida estándar se mantiene. El código de salida es `2`.
 | Código | Significado |
 |---|---|
 | `0` | El programa llegó a `¡Siuuu!` (o lo saltó con un penalti). |
-| `1` | Error de análisis (`E01`–`E08`). |
+| `1` | Error de análisis (`E01`–`E09`). |
 | `2` | Error de ejecución (`E10`–`E12`). |
 | `3` | Error de uso: falta el archivo o sobran argumentos, el archivo no se puede leer o no es UTF-8 válido. |
 
@@ -438,7 +468,8 @@ simple      = "agua"
             | "el penalti lo tiro yo" ;
 bucle       = "yo no persigo los records" , "." , { jugada , "." } ,
               "los records me persiguen a mi" ;
-oracion     = [ "autogol" ] , palabra , { palabra } ;   (* al menos una palabra con letras *)
+oracion     = [ "autogol" ] , palabra , { palabra } ;
+palabra     = (* una palabra del Anexo A, "7" o "cr7" *) ;
 ```
 
 Los fragmentos vacíos entre puntos no aparecen en la gramática porque se
@@ -453,14 +484,15 @@ eliminan antes ([§2.1](#21-jugadas-comandos)).
 Escribe `Hola, mundo!` seguido de un salto de línea. Todo ocurre en la celda
 `0`: en cada paso el Bicho pone el código del carácter y `¿Eres de Málaga?
 Quichiano, quichiano` lo escribe. La `o` (111) se guarda en el portapapeles la
-primera vez y se pega la segunda.
+primera vez y se pega la segunda. Usa los dos casos especiales del vocabulario:
+`7` en la `a` y `CR7` en el espacio.
 
 Archivo `hola_mundo.siu`:
 
 ```
 Calma, calma, estoy aquí.
 
-Ay mi madre, el Bicho: Siempre yo.
+Ay mi madre, el Bicho: Ronaldo yo.
 ¿Eres de Málaga? Quichiano, quichiano.
 
 Ay mi madre, el Bicho: Madridistas y portugueses.
@@ -470,13 +502,13 @@ Me tienen envidia.
 Ay mi madre, el Bicho: Y Manchester, Juventus.
 ¿Eres de Málaga? Quichiano, quichiano.
 
-Ay mi madre, el Bicho: Cristiano Ronaldo.
+Ay mi madre, el Bicho: Cristiano 7.
 ¿Eres de Málaga? Quichiano, quichiano.
 
-Ay mi madre, el Bicho: Pura gana.
+Ay mi madre, el Bicho: Liga, Copa.
 ¿Eres de Málaga? Quichiano, quichiano.
 
-Ay mi madre, el Bicho: Soy yo.
+Ay mi madre, el Bicho: CR7 yo.
 ¿Eres de Málaga? Quichiano, quichiano.
 
 Ay mi madre, el Bicho: Y Manchester, Champions.
@@ -488,7 +520,7 @@ Ay mi madre, el Bicho: Madridistas y Ronaldo.
 Ay mi madre, el Bicho: Portugueses y goleadores.
 ¿Eres de Málaga? Quichiano, quichiano.
 
-Ay mi madre, el Bicho: Inigualable, goleadores, campeonato.
+Ay mi madre, el Bicho: Futbolistas, goleadores, tricampeón.
 ¿Eres de Málaga? Quichiano, quichiano.
 
 Rico, guapo y gran jugador.
@@ -505,20 +537,20 @@ Ay mi madre, el Bicho: A Portuguesa.
 
 Comprobación de las oraciones:
 
-| Carácter | Oración | Letras | Valor |
+| Carácter | Oración | Cifras | Valor |
 |---|---|---|---|
-| `H` | Siempre yo | 7, 2 | 72 |
-| `o` | Madridistas y portugueses | 11, 1, 11 | 111 |
-| `l` | Y Manchester, Juventus | 1, 10, 8 | 108 |
-| `a` | Cristiano Ronaldo | 9, 7 | 97 |
-| `,` | Pura gana | 4, 4 | 44 |
-| ` ` | Soy yo | 3, 2 | 32 |
-| `m` | Y Manchester, Champions | 1, 10, 9 | 109 |
-| `u` | Madridistas y Ronaldo | 11, 1, 7 | 117 |
-| `n` | Portugueses y goleadores | 11, 1, 10 | 110 |
-| `d` | Inigualable, goleadores, campeonato | 11, 10, 10 | 100 |
+| `H` | Ronaldo yo | 7, 2 | 72 |
+| `o` | Madridistas y portugueses | 1, 1, 1 | 111 |
+| `l` | Y Manchester, Juventus | 1, 0, 8 | 108 |
+| `a` | Cristiano 7 | 9, 7 | 97 |
+| `,` | Liga, Copa | 4, 4 | 44 |
+| ` ` | CR7 yo | 3, 2 | 32 |
+| `m` | Y Manchester, Champions | 1, 0, 9 | 109 |
+| `u` | Madridistas y Ronaldo | 1, 1, 7 | 117 |
+| `n` | Portugueses y goleadores | 1, 1, 0 | 110 |
+| `d` | Futbolistas, goleadores, tricampeón | 1, 0, 0 | 100 |
 | `!` | ¡Gol, gol! | 3, 3 | 33 |
-| `\n` | A Portuguesa | 1, 10 | 10 |
+| `\n` | A Portuguesa | 1, 0 | 10 |
 
 ### 8.2 Cuenta atrás (bucle y mecánicas propias)
 
@@ -582,3 +614,39 @@ significa que no se ha encontrado una fuente publicada.
 | `Chilena en Turín` | Intercambiar | No es una cita: alude a su gol de chilena ante la Juventus en Turín (cuartos de la Champions, 3 de abril de 2018). | Referencia |
 | `Losh dosh` | Sumar portapapeles | — | Sin fuente |
 | `El penalti lo tiro yo` | Penalti | No es una cita: frase creada para CR7Script, por ser el lanzador habitual de penaltis de sus equipos. | Inventada |
+
+---
+
+## Anexo A. Vocabulario de la oración
+
+Palabras admitidas en la oración de `Ay mi madre, el Bicho:`
+([§4.2](#42-ay-mi-madre-el-bicho-asignación-con-una-oración)). Se comparan
+normalizadas, así que da igual escribirlas con mayúsculas o sin tildes. La cifra
+de cada palabra es su número de letras módulo 10; las tildes cuentan como una
+letra. Este anexo y `cr7script/vocabulario.py` deben coincidir.
+
+| Cifra | Letras | Conectores | Palabras temáticas |
+|---|---|---|---|
+| 0 | 10 | — | Manchester, Portuguesa, Campeonato, Tricampeón, Goleadores, Futbolista, Madridista, Asistencia, Entrenador, Delanteros |
+| 1 | 1 · 11 | y, a, o, e | Madridistas, Portugueses, Futbolistas, Campeonatos, Asistencias, Celebración, Abdominales |
+| 2 | 2 · 12 | de, el, la, en, al, lo, yo, mi | Pentacampeón, Tetracampeón, Entrenadores, Futbolístico |
+| 3 | 3 · 13 | con, del, los, las, por, que, más | gol, oro, VAR, Old, Nou, Luz, Metropolitano, Entrenamiento, Internacional, Decimotercera, Celebraciones |
+| 4 | 4 | — | Real, Liga, Copa, Bota, Juve, Pepe, Nani, Bale, Kaká, Isco, Xavi, Kiev, Riad, Roma, Camp, City, pase, tiro, giro |
+| 5 | 5 | — | Bicho, Calma, Siuuu, Messi, Turín, Milán, Moscú, París, Nassr, Kroos, Ramos, Bruno, Barça, Piqué, Puyol, Tevez, Giggs, balón, falta, goles, final, póker, siete, salto, grito |
+| 6 | 6 | — | Madrid, United, Lisboa, Oporto, Zagreb, España, Aveiro, Modric, Rooney, Dybala, Buffon, Alonso, Varane, Zidane, Bayern, Neymar, Mbappé, Valdés, récord, golazo, remate, regate, dorsal, Décima |
+| 7 | 7 | — | Ronaldo, Funchal, Madeira, Cardiff, Hungría, Polonia, Francia, Benzema, Marcelo, Scholes, Bonucci, Higuaín, Iniesta, Simeone, Chelsea, Allianz, Premier, Mundial, Orejona, penalti, chilena, trivela, doblete, capitán, extremo, campeón, récords |
+| 8 | 8 | — | Portugal, Sporting, Juventus, Nacional, Bernabéu, Alvalade, Trafford, Marsella, Budapest, Casillas, Moutinho, Quaresma, Carvajal, Ferguson, Mourinho, Atlético, Eurocopa, Pichichi, Scudetto, Undécima, Triplete, Cabezazo, Goleador, penaltis |
+| 9 | 9 | — | Cristiano, Champions, Andorinha, Selección, Barcelona, Liverpool, Argentina, Ferdinand, Chiellini, Ancelotti, Fernandes, Guardiola, Supercopa, Duodécima, Bicicleta, Delantero, Remontada, Campeones |
+
+**Marcador de negativo:** `autogol`. Solo se admite como primera palabra y no
+aporta cifra.
+
+### Casos especiales
+
+Son los únicos tokens con dígitos admitidos. Cualquier otro token con dígitos o
+sin letras (`—`, `9`, `CR9`…) es `E09`.
+
+| Token | Cifra | Motivo |
+|---|---|---|
+| `7` | 7 | Su dorsal. |
+| `CR7` | 3 | Sus tres caracteres. |

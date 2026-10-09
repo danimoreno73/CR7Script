@@ -38,7 +38,7 @@ def test_fuente_que_no_es_utf8(tmp_path):
 
 
 def test_bom_al_principio_se_ignora(tmp_path):
-    fuente = "﻿" + programa("Ay mi madre, el Bicho: Siempre yo", "Soy el primero, el segundo y el tercero")
+    fuente = "﻿" + programa("Ay mi madre, el Bicho: Ronaldo yo", "Soy el primero, el segundo y el tercero")
     assert lanzar(tmp_path, fuente) == (0, b"72", "")
 
 

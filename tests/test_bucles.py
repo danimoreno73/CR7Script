@@ -84,6 +84,6 @@ def test_penalti_que_salta_el_cierre_sale_sin_volver():
             MOSTRAR_NUMERO, SUMAR, SUMAR, SUMAR,   # 3 -> 0
             PENALTI,
         CERRAR,
-        f"{BICHO} Siempre yo", MOSTRAR_NUMERO,
+        f"{BICHO} Ronaldo yo", MOSTRAR_NUMERO,
     )
     assert salida == b"372"

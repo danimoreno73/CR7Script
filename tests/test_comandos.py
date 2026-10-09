@@ -27,7 +27,7 @@ def test_variantes_del_fin(fin):
 
 
 def test_frases_sin_distinguir_mayusculas_tildes_ni_signos():
-    fuente = "¡CALMA,   calma, estoy AQUI!.\nay MI madre el bicho: Siempre yo.\nsoy el primero el segundo y el tercero.\nsiuuu"
+    fuente = "¡CALMA,   calma, estoy AQUI!.\nay MI madre el bicho: RONALDO yo.\nsoy el primero el segundo y el tercero.\nsiuuu"
     salida = io.BytesIO()
     ejecutar(analizar(fuente), io.BytesIO(), salida)
     assert salida.getvalue() == b"72"

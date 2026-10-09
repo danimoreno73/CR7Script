@@ -11,6 +11,7 @@ NOMBRES: dict[str, str] = {
     "E06": "Récord sin cerrar",
     "E07": "Récord sin perseguir",
     "E08": "Comentario sin cerrar",
+    "E09": "No convocado",
     "E10": "Balón fuera",
     "E11": "Revisión del VAR",
     "E12": "Grito ininteligible",
@@ -42,7 +43,7 @@ class ErrorCR7(Exception):
 
 
 class ErrorAnalisis(ErrorCR7):
-    """Error detectado antes de ejecutar (E01–E08). Código de salida 1."""
+    """Error detectado antes de ejecutar (E01–E09). Código de salida 1."""
 
     def __init__(self, codigo: str, detalle: str, linea: int,
                  jugada: int | None = None, posicion: int = 0):

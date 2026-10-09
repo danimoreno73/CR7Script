@@ -35,9 +35,16 @@ SUMAR = "Losh dosh"
 PENALTI = "El penalti lo tiro yo"
 
 
+# Una palabra convocada para cada cifra (Anexo A).
+PALABRA_DE_CIFRA = {
+    "0": "Portuguesa", "1": "y", "2": "de", "3": "gol", "4": "Liga",
+    "5": "Bicho", "6": "Madrid", "7": "Ronaldo", "8": "Portugal", "9": "Cristiano",
+}
+
+
 def asignar(valor: int) -> str:
     """Jugada de asignación con una oración que vale exactamente `valor`."""
-    palabras = ["x" * (int(c) or 10) for c in str(abs(valor))]
+    palabras = [PALABRA_DE_CIFRA[c] for c in str(abs(valor))]
     if valor < 0:
         palabras.insert(0, "autogol")
     return f"{BICHO} {' '.join(palabras)}"
