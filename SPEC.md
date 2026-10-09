@@ -1,6 +1,6 @@
 # CR7Script — Especificación del lenguaje
 
-**Versión:** 0.8 (borrador)
+**Versión:** 1.0
 **Extensión de archivo:** `.siu`
 **Codificación del código fuente:** UTF-8
 

@@ -142,7 +142,11 @@ Hace falta Python 3.10 o posterior. El intérprete solo usa la biblioteca
 estándar, así que no hay nada que instalar:
 
 ```bash
-git clone <url-del-repositorio> CR7Script
+git clone https://github.com/danimoreno73/CR7Script.git
+```
+
+```bash
+cd CR7Script
 ```
 
 ```bash
