@@ -6,6 +6,8 @@ import re
 import pytest
 
 from cr7script.__main__ import main
+from cr7script.frases import Op
+from cr7script.parser import analizar
 from tests.ayuda import RAIZ, SPEC
 
 EJEMPLOS = RAIZ / "ejemplos"
@@ -39,3 +41,54 @@ def test_hola_mundo():
 ])
 def test_cuenta_atras(entrada, esperado):
     assert ejecutar_ejemplo("cuenta_atras.siu", entrada) == (0, esperado)
+
+
+@pytest.mark.parametrize("entrada, esperado", [
+    (b"3\n4\n", b"7\n"),
+    (b"-10\n4\n", b"-6\n"),
+    (b"0\n0\n", b"0\n"),
+    (b"123456789123456789\n1\n", b"123456789123456790\n"),
+])
+def test_sumar(entrada, esperado):
+    assert ejecutar_ejemplo("sumar.siu", entrada) == (0, esperado)
+
+
+@pytest.mark.parametrize("entrada, esperado", [
+    (b"Hola, mundo!\n", b"Hola, mundo!\n"),
+    ("¡Siuuu! ñ 😀".encode(), "¡Siuuu! ñ 😀".encode()),
+    (b"", b""),
+    (b"ab\x00cd", b"ab"),   # un carácter 0 se confunde con el fin de la entrada
+])
+def test_eco(entrada, esperado):
+    assert ejecutar_ejemplo("eco.siu", entrada) == (0, esperado)
+
+
+@pytest.mark.parametrize("entrada, esperado", [
+    (b"10\n", b"0\n1\n1\n2\n3\n5\n8\n13\n21\n34\n"),
+    (b"1\n", b"0\n"),
+    (b"2\n", b"0\n1\n"),
+    (b"0\n", b""),
+])
+def test_fibonacci(entrada, esperado):
+    assert ejecutar_ejemplo("fibonacci.siu", entrada) == (0, esperado)
+
+
+def test_fibonacci_con_precision_arbitraria():
+    _, salida = ejecutar_ejemplo("fibonacci.siu", b"300\n")
+    terminos = salida.decode().split("\n")
+    assert terminos[299] == "137347080577163115432025771710279131845700275212767467264610201"
+
+
+@pytest.mark.parametrize("archivo", sorted(EJEMPLOS.glob("*.siu")), ids=lambda p: p.name)
+def test_los_ejemplos_no_tienen_comentarios(archivo):
+    texto = archivo.read_text(encoding="utf-8")
+    assert "(" not in texto and ")" not in texto
+
+
+def test_los_ejemplos_usan_las_mecanicas_propias():
+    usadas = {
+        ins.op
+        for archivo in EJEMPLOS.glob("*.siu")
+        for ins in analizar(archivo.read_text(encoding="utf-8")).instrucciones
+    }
+    assert {Op.CHILENA, Op.SUMAR, Op.PENALTI} <= usadas

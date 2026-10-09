@@ -1,10 +1,8 @@
 Calma, calma, estoy aquí.
 
-(portapapeles = -1)
 Ay mi madre, el Bicho: autogol y.
 Me tienen envidia.
 
-(celda 0 = n)
 Más un poco y estás aquí, madre mía hijo mío.
 
 Yo no persigo los récords.
@@ -13,7 +11,7 @@ Yo no persigo los récords.
     Ay mi madre, el Bicho: A Portuguesa.
     ¿Eres de Málaga? Quichiano, quichiano.
     He vuelto a casa.
-    Losh dosh.                          (n = n - 1)
+    Losh dosh.
 Los récords me persiguen a mí.
 
 ¡Siuuu!

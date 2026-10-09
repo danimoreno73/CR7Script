@@ -1,6 +1,6 @@
 # CR7Script — Especificación del lenguaje
 
-**Versión:** 0.4 (borrador)
+**Versión:** 0.5 (borrador)
 **Extensión de archivo:** `.siu`
 **Codificación del código fuente:** UTF-8
 
@@ -460,56 +460,43 @@ Archivo `hola_mundo.siu`:
 ```
 Calma, calma, estoy aquí.
 
-(H = 72)
 Ay mi madre, el Bicho: Siempre yo.
 ¿Eres de Málaga? Quichiano, quichiano.
 
-(o = 111; la guardamos para después)
 Ay mi madre, el Bicho: Madridistas y portugueses.
 ¿Eres de Málaga? Quichiano, quichiano.
 Me tienen envidia.
 
-(l = 108)
 Ay mi madre, el Bicho: Y Manchester, Juventus.
 ¿Eres de Málaga? Quichiano, quichiano.
 
-(a = 97)
 Ay mi madre, el Bicho: Cristiano Ronaldo.
 ¿Eres de Málaga? Quichiano, quichiano.
 
-(coma = 44)
 Ay mi madre, el Bicho: Pura gana.
 ¿Eres de Málaga? Quichiano, quichiano.
 
-(espacio = 32)
 Ay mi madre, el Bicho: Soy yo.
 ¿Eres de Málaga? Quichiano, quichiano.
 
-(m = 109)
 Ay mi madre, el Bicho: Y Manchester, Champions.
 ¿Eres de Málaga? Quichiano, quichiano.
 
-(u = 117)
 Ay mi madre, el Bicho: Madridistas y Ronaldo.
 ¿Eres de Málaga? Quichiano, quichiano.
 
-(n = 110)
 Ay mi madre, el Bicho: Portugueses y goleadores.
 ¿Eres de Málaga? Quichiano, quichiano.
 
-(d = 100)
 Ay mi madre, el Bicho: Inigualable, goleadores, campeonato.
 ¿Eres de Málaga? Quichiano, quichiano.
 
-(o = 111, sale del portapapeles)
 Rico, guapo y gran jugador.
 ¿Eres de Málaga? Quichiano, quichiano.
 
-(exclamación = 33)
 Ay mi madre, el Bicho: ¡Gol, gol!.
 ¿Eres de Málaga? Quichiano, quichiano.
 
-(salto de línea = 10)
 Ay mi madre, el Bicho: A Portuguesa.
 ¿Eres de Málaga? Quichiano, quichiano.
 
@@ -542,11 +529,9 @@ Si `n` es negativo, el bucle no termina nunca.
 ```
 Calma, calma, estoy aquí.
 
-(portapapeles = -1)
 Ay mi madre, el Bicho: autogol y.
 Me tienen envidia.
 
-(celda 0 = n)
 Más un poco y estás aquí, madre mía hijo mío.
 
 Yo no persigo los récords.
@@ -555,7 +540,7 @@ Yo no persigo los récords.
     Ay mi madre, el Bicho: A Portuguesa.
     ¿Eres de Málaga? Quichiano, quichiano.
     He vuelto a casa.
-    Losh dosh.                          (n = n - 1)
+    Losh dosh.
 Los récords me persiguen a mí.
 
 ¡Siuuu!
