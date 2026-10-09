@@ -1,0 +1,8 @@
+[project]
+name = "cr7script"
+version = "0.1.0"
+description = "Intérprete de CR7Script, un lenguaje esotérico de jugadas de Cristiano Ronaldo"
+requires-python = ">=3.10"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

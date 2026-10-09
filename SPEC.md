@@ -1,6 +1,6 @@
 # CR7Script — Especificación del lenguaje
 
-**Versión:** 0.3 (borrador)
+**Versión:** 0.4 (borrador)
 **Extensión de archivo:** `.siu`
 **Codificación del código fuente:** UTF-8
 
@@ -40,12 +40,14 @@ El estado de un programa en ejecución se compone de tres elementos:
 
 Un programa es una secuencia de **jugadas** separadas por puntos (`.`).
 
-1. Primero se eliminan los comentarios ([§2.3](#23-comentarios)).
-2. Después el texto se divide por cada `.`.
-3. A cada fragmento se le quitan los espacios del principio y del final. Los
+1. Si el archivo empieza por una marca de orden de bytes (BOM, `U+FEFF`), se
+   descarta. Algunos editores, como el Bloc de notas de Windows, la añaden.
+2. Se eliminan los comentarios ([§2.3](#23-comentarios)).
+3. El texto se divide por cada `.`.
+4. A cada fragmento se le quitan los espacios del principio y del final. Los
    fragmentos vacíos se ignoran, así que da igual poner un punto después de
    `¡Siuuu!`, dejar líneas en blanco o escribir `...`.
-4. Cada fragmento que queda es una jugada. Una jugada puede ocupar varias líneas.
+5. Cada fragmento que queda es una jugada. Una jugada puede ocupar varias líneas.
 
 > **Cuidado:** solo el punto separa jugadas. Los signos `!` y `?` **no**, ni
 > tampoco los saltos de línea. Si una jugada acaba en `?` o `!`, necesita su
@@ -78,7 +80,9 @@ comentarista de la tele) y se ignora. Un comentario:
 
 - puede ocupar varias líneas y contener puntos;
 - no se puede anidar: el primer `)` cierra el comentario;
-- si se queda sin cerrar, o aparece un `)` suelto, es un error (`E08`).
+- se elimina sin dejar hueco: `Siem(comentario)pre` es `Siempre`;
+- si se queda sin cerrar, o aparece un `)` suelto, es un error (`E08`). Un `(`
+  sin cerrar convierte en comentario todo lo que queda de archivo.
 
 ### 2.4 Unicidad de las frases
 
@@ -331,7 +335,8 @@ ejecuta**. Si vale otra cosa, se marca y la ejecución sigue con normalidad.
 
 ## 6. Errores
 
-Todos los errores se escriben en la **salida de errores** con este formato:
+Todos los errores del programa se escriben en la **salida de errores** con este
+formato:
 
 ```
 CR7Script: <código> <nombre> (jugada <n>, línea <l>): <detalle>
@@ -347,12 +352,38 @@ Se detectan **antes de ejecutar ninguna jugada**. Si hay alguno, el programa no
 produce ninguna salida, se informa del **primero** que aparece en el archivo y
 el código de salida es `1`.
 
+**Posición de cada error.** «El primero» se decide por la posición en el
+archivo:
+
+| Error | Posición |
+|---|---|
+| `E01`, `E02`, `E03`, `E05`, `E07` | La jugada donde ocurre. |
+| `E04` | La última jugada. |
+| `E06` | La apertura del bucle que queda sin cerrar. |
+| `E08` | El paréntesis: el `(` sin cerrar o el `)` suelto. |
+| `E03` de archivo sin jugadas | La línea 1. |
+
+**Empates.** Si dos errores caen en la misma jugada, ganan los de inicio y fin
+(`E03`, `E04`, `E05`) a los demás, y `E03` gana a `E04`. Por ejemplo, un
+`¡Siu!` final da `E04` y no `E01`, y un programa que es solo `Agua.` da `E03`.
+
+**Manda el pitido final.** Después del primer `¡Siuuu!` no se analiza nada
+más: la jugada siguiente da `E05`, aunque también sea desconocida o repita el
+inicio. `E04` solo se da si no hay ningún `¡Siuuu!`.
+
+**Comentario sin cerrar.** Si queda un `(` sin cerrar, no se evalúan `E04` ni
+`E06`, porque dependen de la parte del archivo que el comentario se ha tragado.
+Los demás errores anteriores al paréntesis sí cuentan.
+
+**Archivo sin jugadas.** Da `E03`, salvo que tenga un error de comentario
+(`E08`), que es el que se informa.
+
 | Código | Nombre | Cuándo ocurre |
 |---|---|---|
 | `E01` | Fuera de juego | **Comando desconocido:** la jugada no coincide con ninguna frase, o tiene un `:` y lo que va delante no es `ay mi madre el bicho`. |
 | `E02` | Bicho sin balón | La oración de una asignación no aporta ninguna cifra. |
 | `E03` | Sin pitido inicial | La primera jugada no es `Calma, calma, estoy aquí`, el archivo está vacío o la frase de inicio aparece otra vez más adelante. |
-| `E04` | Sin pitido final | El programa no termina con `¡Siuuu!`. |
+| `E04` | Sin pitido final | El programa no tiene ningún `¡Siuuu!`. Si lo tiene pero le siguen jugadas, es `E05`. |
 | `E05` | Partido terminado | Hay jugadas después de `¡Siuuu!`. |
 | `E06` | Récord sin cerrar | **Bucle sin cerrar:** un `Yo no persigo los récords` no tiene su `Los récords me persiguen a mí`. |
 | `E07` | Récord sin perseguir | Un `Los récords me persiguen a mí` no tiene ningún `Yo no persigo los récords` abierto. |
@@ -376,6 +407,11 @@ la salida estándar se mantiene. El código de salida es `2`.
 | `0` | El programa llegó a `¡Siuuu!` (o lo saltó con un penalti). |
 | `1` | Error de análisis (`E01`–`E08`). |
 | `2` | Error de ejecución (`E10`–`E12`). |
+| `3` | Error de uso: falta el archivo o sobran argumentos, el archivo no se puede leer o no es UTF-8 válido. |
+
+Los errores de uso no llevan código `E`. Se escriben en la salida de errores
+como `uso: python -m cr7script archivo.siu` o
+`CR7Script: no se puede leer «<archivo>»: <motivo>`.
 
 ---
 

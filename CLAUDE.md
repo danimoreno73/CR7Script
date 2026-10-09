@@ -32,16 +32,25 @@ Ejecutar un programa (la entrada estándar se pasa al programa):
 python -m cr7script ejemplos/hola_mundo.siu
 ```
 
+pytest se instala en un entorno virtual `.venv` (ignorado por git):
+
+```bash
+python -m venv .venv
+.venv/Scripts/python -m pip install pytest
+```
+
+En Linux o macOS la ruta es `.venv/bin/python`.
+
 Ejecutar todos los tests:
 
 ```bash
-python -m pytest
+.venv/Scripts/python -m pytest
 ```
 
 Ejecutar un solo archivo de tests:
 
 ```bash
-python -m pytest tests/test_errores.py -v
+.venv/Scripts/python -m pytest tests/test_errores.py -v
 ```
 
 ## Reglas de trabajo
